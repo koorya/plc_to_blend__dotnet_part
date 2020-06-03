@@ -18,7 +18,7 @@ namespace common_compolet_pure
         public Form1()
         {
             InitializeComponent();
-            commonCompolet1 = new OMRON.Compolet.CIPCompolet64.CommonCompolet(this.components);
+            
         }
 
     }
