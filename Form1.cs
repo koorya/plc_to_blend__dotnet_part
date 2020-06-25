@@ -18,7 +18,6 @@ namespace common_compolet_pure
         public Form1()
         {
             InitializeComponent();
-            
         }
 
     }

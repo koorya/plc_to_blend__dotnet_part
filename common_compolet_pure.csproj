@@ -13,4 +13,7 @@
       <HintPath>.\references\CIPCompoletProxyLib.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NetMQ" Version="4.0.0.207" />
+  </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows.Forms;
+using System.Threading;
 using OMRON.Compolet.CIPCompolet64;
 
 namespace common_compolet_pure
@@ -7,12 +8,16 @@ namespace common_compolet_pure
     partial class Form1
     {
 
+        Thread cip_sycnc;
+        Thread mq_thread;
         private GroupBox groupBoxConnection;
         private NumericUpDown numPortNo;
         private Label labelPortNo;
         private Label labelIPAddress;
         private TextBox txtIPAddress;
         private CheckBox chkActive;
+        private CheckBox chkPx;
+        private CheckBox chkMQ;
 
         private Button btnWriteVariable;
         private Button btnReadVariable;
@@ -24,6 +29,8 @@ namespace common_compolet_pure
 
         protected override void Dispose(bool disposing)
         {
+            cip_sycnc.Abort();
+            mq_thread.Abort();
             if (disposing && (components != null))
             {
                 components.Dispose();
@@ -39,17 +46,23 @@ namespace common_compolet_pure
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Text = "Form1";
 
+            cip_sycnc = new Thread(new ThreadStart(cip_update));
+
+            mq_thread = new Thread(new ThreadStart(mq_test));
+
+
             commonCompolet1 = new OMRON.Compolet.CIPCompolet64.CommonCompolet(this.components);
             
             this.commonCompolet1.Active = false;
             this.commonCompolet1.ConnectionType = OMRON.Compolet.CIPCompolet64.ConnectionType.UCMM;
-            this.commonCompolet1.LocalPort = 2;
-            this.commonCompolet1.PeerAddress = "192.168.250.1";
+            this.commonCompolet1.LocalPort = 3;
+            this.commonCompolet1.PeerAddress = "172.16.201.14";//"192.168.250.1";
             this.commonCompolet1.ReceiveTimeLimit = ((long)(750));
-            this.commonCompolet1.RoutePath = "2%192.168.250.1\\1%0";
+            this.commonCompolet1.RoutePath = "2%172.16.201.14\\1%0";//"2%192.168.250.1\\1%0";
             this.commonCompolet1.UseRoutePath = false;
             // 
 
+            #region form content
 
             this.groupBoxConnection = new GroupBox();
             this.numPortNo = new NumericUpDown();
@@ -57,7 +70,9 @@ namespace common_compolet_pure
             this.labelIPAddress = new Label();
             this.txtIPAddress = new TextBox();
             this.chkActive = new CheckBox();
-
+            this.chkPx = new CheckBox();
+            this.chkMQ = new CheckBox();
+            
             this.btnWriteVariable = new Button();
             this.btnReadVariable = new Button();
             this.txtValue = new TextBox();
@@ -85,6 +100,9 @@ namespace common_compolet_pure
 
             
             this.Controls.Add(this.chkActive);
+            this.Controls.Add(this.chkPx);
+            this.Controls.Add(this.chkMQ);
+            
             this.Controls.Add(this.groupBoxConnection);
 
 
@@ -99,7 +117,7 @@ namespace common_compolet_pure
             this.txtIPAddress.Name = "txtIPAddress";
             this.txtIPAddress.Size = new System.Drawing.Size(176, 20);
             this.txtIPAddress.TabIndex = 8;
-            this.txtIPAddress.Text = "192.168.250.1";
+            this.txtIPAddress.Text = "172.16.201.14";//"192.168.250.1";
             this.txtIPAddress.TextChanged += new System.EventHandler(this.txtIPAddress_TextChanged);
             // 
 
@@ -128,7 +146,7 @@ namespace common_compolet_pure
             this.numPortNo.Size = new System.Drawing.Size(176, 20);
             this.numPortNo.TabIndex = 0;
             this.numPortNo.Value = new decimal(new int[] {
-            2,
+            3,
             0,
             0,
             0});
@@ -147,6 +165,19 @@ namespace common_compolet_pure
             this.chkActive.TabIndex = 1;
             this.chkActive.Text = "Active";
             this.chkActive.CheckedChanged += new System.EventHandler(this.chkActive_CheckedChanged);
+
+            this.chkPx.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.chkPx.Location = new System.Drawing.Point(26, 217);
+            this.chkPx.Name = "chkPx";
+            this.chkPx.Size = new System.Drawing.Size(71, 17);
+            this.chkPx.Text = "PX";
+
+            this.chkMQ.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.chkMQ.Location = new System.Drawing.Point(200, 350);
+            this.chkMQ.Name = "chkMQ";
+            this.chkMQ.Size = new System.Drawing.Size(71, 17);
+            this.chkMQ.Text = "chkMQ";
+            this.chkMQ.CheckedChanged += new System.EventHandler(this.chkMQ_CheckedChanged);
 
 
             // 
@@ -201,6 +232,9 @@ namespace common_compolet_pure
             this.btnWriteVariable.Text = "Write";
             this.btnWriteVariable.Click += new System.EventHandler(this.btnWriteVariable_Click);
 
+            #endregion
+
+            
 
         }
 
@@ -226,101 +260,7 @@ namespace common_compolet_pure
 			}
 		}
 
-		private object RemoveBrackets(string val)
-		{
-			object obj = string.Empty;
-			if (val.IndexOf("[") >= 0)
-			{
-				string str = val.Trim('[', ']');
-				str = str.Replace("][", ",");
-				obj = str.Split(',');
-			}
-			else
-			{
-				obj = val;
-			}
-			return obj;
-		}
-		private byte[] ObjectToByteArray(object obj)
-		{
-			if(obj is Array)
-			{
-				Array arr = obj as Array;
-				Byte[] bin = new Byte[arr.Length];
-				for(int i = 0 ; i < bin.Length ; i++)
-				{
-					bin[i] = Convert.ToByte(arr.GetValue(i));
-				}
-				return bin;
-			}
-			else
-			{
-				return new Byte[1]{ Convert.ToByte(obj) };
-			}
-		}
-        		private string GetValueOfVariables(object val)
-		{
-			string valStr = string.Empty;
-			if (val.GetType().IsArray)
-			{
-				Array valArray = val as Array;
-				if (valArray.Rank == 1)
-				{
-					valStr += "[";
-					foreach (object a in valArray)
-					{
-						valStr += this.GetValueString(a) + ",";
-					}
-					valStr = valStr.TrimEnd(',');
-					valStr += "]";
-				}
-				else if (valArray.Rank == 2)
-				{
-					for (int i = 0; i <= valArray.GetUpperBound(0); i++)
-					{
-						valStr += "[";
-						for (int j = 0; j <= valArray.GetUpperBound(1); j++)
-						{
-							valStr += this.GetValueString(valArray.GetValue(i, j)) + ",";
-						}
-						valStr = valStr.TrimEnd(',');
-						valStr += "]";
-					}
-				}
-				else if (valArray.Rank == 3)
-				{
-					for (int i = 0; i <= valArray.GetUpperBound(0); i++)
-					{
-						for (int j = 0; j <= valArray.GetUpperBound(1); j++)
-						{
-							valStr += "[";
-							for (int z = 0; z <= valArray.GetUpperBound(2); z++)
-							{
-								valStr += this.GetValueString(valArray.GetValue(i, j, z)) + ",";
-							}
-							valStr = valStr.TrimEnd(',');
-							valStr += "]";
-						}
-					}
-				}
-			}
-			else
-			{
-				valStr = this.GetValueString(val);
-			}
-			return valStr;
-		}
-        private string GetValueString(object val)
-		{
-			if (val is float || val is double)
-			{
-				return string.Format("{0:R}", val);
-			}
-			else
-			{
-				return val.ToString();
-			}
-		}
+
 
 		private void btnWriteVariable_Click(object sender, System.EventArgs e)
 		{
@@ -362,6 +302,12 @@ namespace common_compolet_pure
 				this.commonCompolet1.Active = this.chkActive.Checked;
 				if (this.chkActive.Checked)
 				{
+                    if(cip_sycnc.ThreadState == ThreadState.Unstarted)
+                        cip_sycnc.Start();
+                    if(cip_sycnc.ThreadState == ThreadState.Stopped){
+                        cip_sycnc = new Thread(new ThreadStart(cip_update));
+                        cip_sycnc.Start();
+                    }
 					if (!this.commonCompolet1.IsConnected)
 					{
 
@@ -369,8 +315,11 @@ namespace common_compolet_pure
 
 						this.commonCompolet1.Active = false;
 						this.chkActive.Checked = false;
+                        cip_end = false;
 					}
-				}
+				}else{
+                    cip_end = false;
+                }
 			}
 			catch (Exception ex)
 			{
@@ -379,6 +328,31 @@ namespace common_compolet_pure
 				this.chkActive.Checked = false;
 			}
 		}
+
+		private void chkMQ_CheckedChanged(object sender, System.EventArgs e)
+		{
+			try
+			{
+				if (this.chkMQ.Checked)
+				{
+                    if(mq_thread.ThreadState == ThreadState.Unstarted)
+                        mq_thread.Start();
+                    if(mq_thread.ThreadState == ThreadState.Stopped){
+                        mq_thread = new Thread(new ThreadStart(mq_test));
+                        mq_thread.Start();
+                    }
+
+				}else{
+                    mq_end = false;
+                }
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				this.chkMQ.Checked = false;
+			}
+		}
+
 
     }
 }
