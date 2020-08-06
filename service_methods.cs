@@ -26,13 +26,8 @@ namespace common_compolet_pure
                     while(cip_end)
                     {
 
-                        object obj = this.commonCompolet1.ReadVariable("axis_for_socket.kareta");
+                        object obj = this.commonCompolet1.ReadVariable("eth_var");
                         if (obj == null)
-                        {
-                            throw new NotSupportedException();
-                        }
-                        object obj1 = this.commonCompolet1.ReadVariable("axis_for_socket.link_pantograph");
-                        if (obj1 == null)
                         {
                             throw new NotSupportedException();
                         }
@@ -43,17 +38,15 @@ namespace common_compolet_pure
                     //  info = this.commonCompolet1.GetVariableInfo(varname);
                         string str = this.GetValueOfVariables(obj);
 
-                        this.txtValue.Text = str;
-                        int x = ((int)obj)/1;
-                        int y = 0;//(int)obj1;
-                        this.chkPx.Location = new System.Drawing.Point(x + 150, 257 + y);
+                        this.txtValue.Text = $"[{BitConverter.ToDouble((byte[])obj, 0)}], [{BitConverter.ToDouble((byte[])obj, 8)}],"+
+											$"[{BitConverter.ToDouble((byte[])obj, 16)}], [{BitConverter.ToDouble((byte[])obj, 24)}]";//str;
 
-                        byte[][] bytes = {Encoding.ASCII.GetBytes("foo"), Encoding.ASCII.GetBytes($"{x}")};
-
-                        publisher.SendMultipartBytes(bytes);
+                      //  byte[][] bytes = {Encoding.ASCII.GetBytes("foo"), Encoding.ASCII.GetBytes($"{x}")};
+					  	
+                  //      publisher.SendMultipartBytes(bytes);
                          //   .SendMoreFrame("foo") // Topic
                           //  .SendFrame($"{x}"); // Message
-
+						publisher.SendFrame((byte[])obj);
                         Thread.Sleep(50);
                     }
                 }

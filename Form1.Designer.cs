@@ -250,12 +250,29 @@ namespace common_compolet_pure
 				}
 
 				VariableInfo info = this.commonCompolet1.GetVariableInfo(varname);
+                System.Console.WriteLine($"Name: {info.Name}");
+                System.Console.WriteLine($"Type: {info.Type}");
+                System.Console.WriteLine($"IsArray: {info.IsArray}");
+                System.Console.WriteLine($"Dimension: {info.Dimension}");
+                System.Console.WriteLine($"NumberOfElements: {info.NumberOfElements}");
+                System.Console.WriteLine("info.StructMembers.length:" + info.StructMembers?.Length);
+
+                // foreach(var el in info.StructMembers){
+                //     System.Console.WriteLine($"Name: {el.Name}");
+                //     System.Console.WriteLine($"Type: {el.Type}");
+                //     System.Console.WriteLine($"IsArray: {el.IsArray}");
+                //     System.Console.WriteLine($"Dimension: {el.Dimension}");
+                //     System.Console.WriteLine($"NumberOfElements: {el.NumberOfElements}");
+                //     System.Console.WriteLine($"StartArrayElements: {el.StartArrayElements}");
+                //     System.Console.WriteLine("------------------");
+                // }
 				string str = this.GetValueOfVariables(obj);
 
 				this.txtValue.Text = str;
 			}
 			catch (Exception ex)
 			{
+                System.Console.WriteLine("exept");
 				MessageBox.Show(ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 			}
 		}
